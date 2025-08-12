@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guessmoji - Daily Emoji Challenge</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      font-size: 2em;
+    }
+    .emoji {
+      font-size: 3em;
+      margin: 20px 0;
+    }
+    input {
+      padding: 10px;
+      font-size: 1em;
+      width: 250px;
+      max-width: 90%;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 1em;
+      margin-left: 5px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 15px;
+      font-size: 1.2em;
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 0.8em;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Guessmoji</h1>
+  <p>Can you guess today’s emoji puzzle? One challenge per day, worldwide!</p>
+
+  <div id="emojis">Loading...</div>
+
+  <input id="guess" placeholder="Type your answer here" />
+  <button onclick="checkAnswer()">Submit</button>
+
+  <p id="result"></p>
+
+  <footer>
+    &copy; 2025 Guessmoji. All rights reserved.
+  </footer>
+
+  <script>
+    let answer = "";
+    let altAnswers = [];
+
+    // 🔗 Cole aqui a URL pública do seu Google Apps Script
+    const API_URL = "COLE_AQUI_A_SUA_URL_DA_API";
+
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById("emojis").innerText = "No challenge today!";
+        } else {
+          document.getElementById("emojis").innerText = data.emojis;
+          answer = data.answer.toLowerCase().trim();
+          altAnswers = data.alt.toLowerCase().split(",").map(a => a.trim());
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("emojis").innerText = "Error loading challenge.";
+      });
+
+    function checkAnswer() {
+      const guess = document.getElementById("guess").value.trim().toLowerCase();
+      if (guess === answer || altAnswers.includes(guess)) {
+        document.getElementById("result").innerText = "✅ Correct!";
+        document.getElementById("result").style.color = "green";
+      } else {
+        document.getElementById("result").innerText = "❌ Try again!";
+        document.getElementById("result").style.color = "red";
+      }
+    }
+  </script>
+
+</body>
+</html>
