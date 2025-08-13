@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Guessmoji - Daily Emoji Challenge</title>
   <style>
     body {
@@ -11,34 +11,17 @@
       padding: 30px;
       background-color: #f9f9f9;
     }
-    h1 {
-      font-size: 2em;
-    }
-    .emoji {
-      font-size: 3em;
-      margin: 20px 0;
-    }
+    h1 { font-size: 2em; }
+    .emoji { font-size: 3em; margin: 20px 0; }
     input {
-      padding: 10px;
-      font-size: 1em;
-      width: 250px;
-      max-width: 90%;
+      padding: 10px; font-size: 1em; width: 250px; max-width: 90%;
+      display: block; margin: 8px auto;
     }
     button {
-      padding: 10px 15px;
-      font-size: 1em;
-      margin-left: 5px;
-      cursor: pointer;
+      padding: 10px 15px; font-size: 1em; cursor: pointer;
     }
-    #result {
-      margin-top: 15px;
-      font-size: 1.2em;
-    }
-    footer {
-      margin-top: 40px;
-      font-size: 0.8em;
-      color: #777;
-    }
+    #result { margin-top: 15px; font-size: 1.2em; }
+    footer { margin-top: 40px; font-size: 0.8em; color: #777; }
   </style>
 </head>
 <body>
@@ -50,7 +33,7 @@
 
   <input id="username" placeholder="Enter your name" />
   <input id="guess" placeholder="Type your answer here" />
-  <button onclick="checkAnswer()">Submit</button>
+  <button id="submitBtn">Submit</button>
 
   <p id="result"></p>
 
@@ -64,9 +47,9 @@
     let attempts = 0;
     let challengeLoadedTime = new Date();
 
-    // 🔗 Cole aqui a URL pública do seu Google Apps Script
-    const API_URL = "https://script.google.com/macros/s/AKfycbxs9tnBOh2XnXxjVCWp8GVR6al4Hdies13ab3LAdkM0k-zUhyfpK97zJUrP-nD0A1dh/exec";
-    const API_POST_URL = "https://script.google.com/macros/s/AKfycbwhVZ7h41WKPNwWl6fyIczEBqXt85HL7yMOixIDt5Lag2WrBFU1dAUiT-7kzf64f9dt/exec"; // Para enviar pontuação
+    // Agora chamamos os PROXIES do Vercel (mesma origem)
+    const API_URL = "/api/challenge";
+    const API_POST_URL = "/api/submit";
 
     // Carrega o desafio
     fetch(API_URL)
@@ -76,8 +59,9 @@
           document.getElementById("emojis").innerText = "No challenge today!";
         } else {
           document.getElementById("emojis").innerText = data.emojis;
-          answer = data.answer.toLowerCase().trim();
-          altAnswers = data.alt.toLowerCase().split(",").map(a => a.trim());
+          answer = String(data.answer || "").toLowerCase().trim();
+          const alt = String(data.alt || "");
+          altAnswers = alt ? alt.toLowerCase().split(",").map(a => a.trim()) : [];
           challengeLoadedTime = new Date();
         }
       })
@@ -86,37 +70,30 @@
         document.getElementById("emojis").innerText = "Error loading challenge.";
       });
 
-    // Calcula pontos
     function calculatePoints(elapsedSeconds, attempts) {
-      let base = 1000;
-      let timePenalty = elapsedSeconds * 2;
-      let attemptsPenalty = (attempts - 1) * 50;
+      const base = 1000;
+      const timePenalty = elapsedSeconds * 2;
+      const attemptsPenalty = Math.max(0, attempts - 1) * 50;
       return Math.max(base - timePenalty - attemptsPenalty, 0);
     }
 
-    // Envia pontuação para planilha
     function sendScoreToSheet(username, points, attempts, elapsed) {
       const payload = {
-        username: username,
+        username,
         challengeDate: new Date().toISOString().split("T")[0],
-        points: points,
-        attempts: attempts,
-        elapsed: elapsed
+        points,
+        attempts,
+        elapsed
       };
 
-      fetch(API_POST_URL, {
+      return fetch(API_POST_URL, {
         method: "POST",
-        body: JSON.stringify(payload),
-        headers: {
-          "Content-Type": "application/json"
-        }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       })
-      .then(res => res.json())
-      .then(data => console.log("Score sent:", data))
-      .catch(err => console.error("Error sending score:", err));
+      .then(res => res.json());
     }
 
-    // Função para verificar a resposta
     function checkAnswer() {
       const username = document.getElementById("username").value.trim();
       if (!username) {
@@ -127,29 +104,29 @@
       attempts++;
       const guess = document.getElementById("guess").value.trim().toLowerCase();
 
-      if (guess === answer || altAnswers.includes(guess)) {
+      if (guess && (guess === answer || altAnswers.includes(guess))) {
         const answerTime = new Date();
-        const elapsed = (answerTime - challengeLoadedTime) / 1000; // segundos
-        const points = calculatePoints(elapsed, attempts);
+        const elapsed = (answerTime - challengeLoadedTime) / 1000; // em segundos
+        const points = Math.round(calculatePoints(elapsed, attempts));
 
-        sendScoreToSheet(username, points, attempts, elapsed);
-
-        document.getElementById("result").innerText = "✅ Correct!";
-        document.getElementById("result").style.color = "green";
+        sendScoreToSheet(username, points, attempts, elapsed)
+          .then(data => {
+            console.log("Score sent:", data);
+            document.getElementById("result").innerText = "✅ Correct!";
+            document.getElementById("result").style.color = "green";
+          })
+          .catch(err => {
+            console.error("Error sending score:", err);
+            document.getElementById("result").innerText = "⚠️ Correct, but failed to record score.";
+            document.getElementById("result").style.color = "orange";
+          });
       } else {
         document.getElementById("result").innerText = "❌ Try again!";
         document.getElementById("result").style.color = "red";
       }
     }
-  </script>
 
-<script src="submit.js"></script>
-  
+    document.getElementById("submitBtn").addEventListener("click", checkAnswer);
+  </script>
 </body>
 </html>
-
-
-
-
-
-
