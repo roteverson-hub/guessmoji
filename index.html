@@ -48,6 +48,7 @@
 
   <div id="emojis">Loading...</div>
 
+  <input id="username" placeholder="Enter your name" />
   <input id="guess" placeholder="Type your answer here" />
   <button onclick="checkAnswer()">Submit</button>
 
@@ -60,10 +61,14 @@
   <script>
     let answer = "";
     let altAnswers = [];
+    let attempts = 0;
+    let challengeLoadedTime = new Date();
 
     // 🔗 Cole aqui a URL pública do seu Google Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbxs9tnBOh2XnXxjVCWp8GVR6al4Hdies13ab3LAdkM0k-zUhyfpK97zJUrP-nD0A1dh/exec";
+    const API_POST_URL = "COLE_AQUI_SUA_NOVA_API_DO_APPS_SCRIPT"; // Para enviar pontuação
 
+    // Carrega o desafio
     fetch(API_URL)
       .then(res => res.json())
       .then(data => {
@@ -73,6 +78,7 @@
           document.getElementById("emojis").innerText = data.emojis;
           answer = data.answer.toLowerCase().trim();
           altAnswers = data.alt.toLowerCase().split(",").map(a => a.trim());
+          challengeLoadedTime = new Date();
         }
       })
       .catch(err => {
@@ -80,9 +86,54 @@
         document.getElementById("emojis").innerText = "Error loading challenge.";
       });
 
+    // Calcula pontos
+    function calculatePoints(elapsedSeconds, attempts) {
+      let base = 1000;
+      let timePenalty = elapsedSeconds * 2;
+      let attemptsPenalty = (attempts - 1) * 50;
+      return Math.max(base - timePenalty - attemptsPenalty, 0);
+    }
+
+    // Envia pontuação para planilha
+    function sendScoreToSheet(username, points, attempts, elapsed) {
+      const payload = {
+        username: username,
+        challengeDate: new Date().toISOString().split("T")[0],
+        points: points,
+        attempts: attempts,
+        elapsed: elapsed
+      };
+
+      fetch(API_POST_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(res => res.json())
+      .then(data => console.log("Score sent:", data))
+      .catch(err => console.error("Error sending score:", err));
+    }
+
+    // Função para verificar a resposta
     function checkAnswer() {
+      const username = document.getElementById("username").value.trim();
+      if (!username) {
+        alert("Please enter your name!");
+        return;
+      }
+
+      attempts++;
       const guess = document.getElementById("guess").value.trim().toLowerCase();
+
       if (guess === answer || altAnswers.includes(guess)) {
+        const answerTime = new Date();
+        const elapsed = (answerTime - challengeLoadedTime) / 1000; // segundos
+        const points = calculatePoints(elapsed, attempts);
+
+        sendScoreToSheet(username, points, attempts, elapsed);
+
         document.getElementById("result").innerText = "✅ Correct!";
         document.getElementById("result").style.color = "green";
       } else {
@@ -94,7 +145,3 @@
 
 </body>
 </html>
-
-
-
-
