@@ -1,213 +1,181 @@
-!DOCTYPE html
-html lang=en
-head
-  meta charset=UTF-8 
-  meta name=viewport content=width=device-width, initial-scale=1.0
-  titleGuessmoji - Daily Emoji Challengetitle
-  style
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Guessmoji - Daily Emoji Challenge</title>
+  <style>
     body {
-      font-family Arial, sans-serif;
-      text-align center;
-      padding 30px;
-      background-color #f9f9f9;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+      background-color: #f9f9f9;
     }
-    h1 { font-size 2em; }
-    .emoji { font-size 3em; margin 20px 0; }
+    h1 { font-size: 2em; }
+    .emoji { font-size: 3em; margin: 20px 0; }
     input {
-      padding 10px; font-size 1em; width 250px; max-width 90%;
-      display block; margin 8px auto;
+      padding: 10px; font-size: 1em; width: 250px; max-width: 90%;
+      display: block; margin: 8px auto;
     }
     button {
-      padding 10px 15px; font-size 1em; cursor pointer;
+      padding: 10px 15px; font-size: 1em; cursor: pointer;
     }
-    #result { margin-top 15px; font-size 1.2em; }
-    footer { margin-top 40px; font-size 0.8em; color #777; }
+    #result { margin-top: 15px; font-size: 1.2em; }
+    footer { margin-top: 40px; font-size: 0.8em; color: #777; }
 
     .rankings {
-      display flex;
-      flex-wrap wrap;
-      justify-content center;
-      gap 30px;
-      margin-top 30px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 30px;
     }
     .ranking-box {
-      background white;
-      border 1px solid #ddd;
-      border-radius 8px;
-      padding 15px;
-      width 300px;
-      box-shadow 0 2px 4px rgba(0,0,0,0.1);
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      width: 300px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .ranking-box h2 {
-      font-size 1.2em;
-      margin-bottom 10px;
+      font-size: 1.2em;
+      margin-bottom: 10px;
     }
     .ranking-box table {
-      width 100%;
-      border-collapse collapse;
+      width: 100%;
+      border-collapse: collapse;
     }
     .ranking-box th, .ranking-box td {
-      padding 5px;
-      border-bottom 1px solid #eee;
-      text-align left;
-      font-size 0.9em;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      font-size: 0.9em;
     }
     .ranking-box th {
-      background-color #f5f5f5;
+      background-color: #f5f5f5;
     }
-  style
-head
-body
+  </style>
+</head>
+<body>
 
-  h1Guessmojih1
-  pCan you guess today’s emoji puzzle One challenge per day, worldwide!p
+  <h1>Guessmoji</h1>
+  <p>Can you guess today’s emoji puzzle? One challenge per day, worldwide!</p>
 
-  div id=emojisLoading...div
+  <div id="emojis">Loading...</div>
 
-  input id=username placeholder=Enter your name 
-  input id=guess placeholder=Type your answer here 
-  button id=submitBtnSubmitbutton
+  <input id="username" placeholder="Enter your name" />
+  <input id="guess" placeholder="Type your answer here" />
+  <button id="submitBtn">Submit</button>
 
-  p id=resultp
+  <p id="result"></p>
 
-  !-- Rankings --
-  div class=rankings
-    div class=ranking-box
-      h2🏆 Daily Toph2
-      table id=dailyRanking
-        thead
-          trth#ththUserththPointsthtr
-        thead
-        tbodytbody
-      table
-    div
-    div class=ranking-box
-      h2🌍 Overall Toph2
-      table id=overallRanking
-        thead
-          trth#ththUserththPointsthtr
-        thead
-        tbodytbody
-      table
-    div
-  div
+  <!-- Rankings -->
+  <div class="rankings">
+    <div class="ranking-box">
+      <h2>🏆 Daily Top</h2>
+      <table id="dailyRanking">
+        <thead>
+          <tr><th>#</th><th>User</th><th>Points</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="ranking-box">
+      <h2>🌍 Overall Top</h2>
+      <table id="overallRanking">
+        <thead>
+          <tr><th>#</th><th>User</th><th>Points</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 
-  footer
+  <footer>
     &copy; 2025 Guessmoji. All rights reserved.
-  footer
+  </footer>
 
-  script
-    let answer = ;
-    let altAnswers = [];
+  <script>
+    let answer = "test";
+    let altAnswers = ["teste"];
     let attempts = 0;
     let challengeLoadedTime = new Date();
 
-    const API_URL = apichallenge;
-    const API_POST_URL = apisubmit;
+    // Dados fake para teste
+    const fakeDailyTop = [
+      { username: "Alice", points: 900 },
+      { username: "Bob", points: 850 },
+      { username: "Carol", points: 800 }
+    ];
+    const fakeOverallTop = [
+      { username: "Alice", totalPoints: 4500 },
+      { username: "Bob", totalPoints: 4300 },
+      { username: "Carol", totalPoints: 4000 }
+    ];
 
-     Função atualizada para aceitar chave de pontos
-    function renderRanking(tableId, rankingArray, key = points) {
+    const API_URL = "/api/challenge"; // não será usado nesse teste
+    const API_POST_URL = "/api/submit"; // não será usado nesse teste
+
+    // Função de renderização com chave de pontos
+    function renderRanking(tableId, rankingArray, key = "points") {
       const tbody = document.querySelector(`#${tableId} tbody`);
-      tbody.innerHTML = ;
-      if (!rankingArray  rankingArray.length === 0) {
-        tbody.innerHTML = `trtd colspan=3No datatdtr`;
+      tbody.innerHTML = "";
+      if (!rankingArray || rankingArray.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3">No data</td></tr>`;
         return;
       }
-      rankingArray.forEach((row, i) = {
-        const tr = document.createElement(tr);
-        tr.innerHTML = `td${i + 1}tdtd${row.username}tdtd${row[key]}td`;
+      rankingArray.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${i + 1}</td><td>${row.username}</td><td>${row[key]}</td>`;
         tbody.appendChild(tr);
       });
     }
 
-     Carrega o desafio + rankings
-    fetch(API_URL)
-      .then(res = res.json())
-      .then(data = {
-        if (data.error) {
-          document.getElementById(emojis).innerText = No challenge today!;
-        } else {
-          document.getElementById(emojis).innerText = data.emojis;
-          answer = String(data.answer  ).toLowerCase().trim();
-          const alt = String(data.alt  );
-          altAnswers = alt  alt.toLowerCase().split(,).map(a = a.trim())  [];
-          challengeLoadedTime = new Date();
-
-           Renderiza rankings com chave correta
-          renderRanking(dailyRanking, data.dailyTop, points);
-          renderRanking(overallRanking, data.overallTotal, totalPoints);
-        }
-      })
-      .catch(err = {
-        console.error(err);
-        document.getElementById(emojis).innerText = Error loading challenge.;
-      });
+    // Renderiza rankings fake
+    renderRanking("dailyRanking", fakeDailyTop, "points");
+    renderRanking("overallRanking", fakeOverallTop, "totalPoints");
 
     function calculatePoints(elapsedSeconds, attempts) {
       const base = 1000;
-      const timePenalty = elapsedSeconds  2;
-      const attemptsPenalty = Math.max(0, attempts - 1)  50;
+      const timePenalty = elapsedSeconds * 2;
+      const attemptsPenalty = Math.max(0, attempts - 1) * 50;
       return Math.max(base - timePenalty - attemptsPenalty, 0);
     }
 
     function sendScoreToSheet(username, points, attempts, elapsed) {
-      const payload = {
-        username,
-        challengeDate new Date().toISOString().split(T)[0],
-        points,
-        attempts,
-        elapsed
-      };
-
-      return fetch(API_POST_URL, {
-        method POST,
-        headers { Content-Type applicationjson },
-        body JSON.stringify(payload)
-      })
-      .then(res = res.json());
+      console.log("Fake submit:", { username, points, attempts, elapsed });
+      return Promise.resolve({ success: true });
     }
 
     function checkAnswer() {
-      const username = document.getElementById(username).value.trim();
+      const username = document.getElementById("username").value.trim();
       if (!username) {
-        alert(Please enter your name!);
+        alert("Please enter your name!");
         return;
       }
 
       attempts++;
-      const guess = document.getElementById(guess).value.trim().toLowerCase();
+      const guess = document.getElementById("guess").value.trim().toLowerCase();
 
-      if (guess && (guess === answer  altAnswers.includes(guess))) {
+      if (guess && (guess === answer || altAnswers.includes(guess))) {
         const answerTime = new Date();
-        const elapsed = (answerTime - challengeLoadedTime)  1000;
+        const elapsed = (answerTime - challengeLoadedTime) / 1000;
         const points = Math.round(calculatePoints(elapsed, attempts));
 
         sendScoreToSheet(username, points, attempts, elapsed)
-          .then(data = {
-            console.log(Score sent, data);
-            document.getElementById(result).innerText = ✅ Correct!;
-            document.getElementById(result).style.color = green;
-
-             Atualiza rankings após envio
-            return fetch(API_URL)
-              .then(res = res.json())
-              .then(updated = {
-                renderRanking(dailyRanking, updated.dailyTop, points);
-                renderRanking(overallRanking, updated.overallTotal, totalPoints);
-              });
-          })
-          .catch(err = {
-            console.error(Error sending score, err);
-            document.getElementById(result).innerText = ⚠️ Correct, but failed to record score.;
-            document.getElementById(result).style.color = orange;
+          .then(data => {
+            console.log("Score sent:", data);
+            document.getElementById("result").innerText = "✅ Correct!";
+            document.getElementById("result").style.color = "green";
           });
       } else {
-        document.getElementById(result).innerText = ❌ Try again!;
-        document.getElementById(result).style.color = red;
+        document.getElementById("result").innerText = "❌ Try again!";
+        document.getElementById("result").style.color = "red";
       }
     }
 
-    document.getElementById(submitBtn).addEventListener(click, checkAnswer);
-  script
-body
-html
+    document.getElementById("submitBtn").addEventListener("click", checkAnswer);
+  </script>
+</body>
+</html>
