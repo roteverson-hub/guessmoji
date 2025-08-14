@@ -105,7 +105,8 @@
     const API_URL = "/api/challenge";
     const API_POST_URL = "/api/submit";
 
-    function renderRanking(tableId, rankingArray) {
+    // Função atualizada para aceitar chave de pontos
+    function renderRanking(tableId, rankingArray, key = "points") {
       const tbody = document.querySelector(`#${tableId} tbody`);
       tbody.innerHTML = "";
       if (!rankingArray || rankingArray.length === 0) {
@@ -114,7 +115,7 @@
       }
       rankingArray.forEach((row, i) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i + 1}</td><td>${row.username}</td><td>${row.points}</td>`;
+        tr.innerHTML = `<td>${i + 1}</td><td>${row.username}</td><td>${row[key]}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -132,9 +133,9 @@
           altAnswers = alt ? alt.toLowerCase().split(",").map(a => a.trim()) : [];
           challengeLoadedTime = new Date();
 
-          // Renderiza rankings
-          renderRanking("dailyRanking", data.dailyTop);
-          renderRanking("overallRanking", data.overallTotal);
+          // Renderiza rankings com chave correta
+          renderRanking("dailyRanking", data.dailyTop, "points");
+          renderRanking("overallRanking", data.overallTotal, "totalPoints");
         }
       })
       .catch(err => {
@@ -191,8 +192,8 @@
             return fetch(API_URL)
               .then(res => res.json())
               .then(updated => {
-                renderRanking("dailyRanking", updated.dailyTop);
-                renderRanking("overallRanking", updated.overallTotal);
+                renderRanking("dailyRanking", updated.dailyTop, "points");
+                renderRanking("overallRanking", updated.overallTotal, "totalPoints");
               });
           })
           .catch(err => {
