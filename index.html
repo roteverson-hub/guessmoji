@@ -97,27 +97,15 @@
   </footer>
 
   <script>
-    let answer = "test";
-    let altAnswers = ["teste"];
+    let answer = "";
+    let altAnswers = [];
     let attempts = 0;
     let challengeLoadedTime = new Date();
 
-    // Dados fake para teste
-    const fakeDailyTop = [
-      { username: "Alice", points: 900 },
-      { username: "Bob", points: 850 },
-      { username: "Carol", points: 800 }
-    ];
-    const fakeOverallTop = [
-      { username: "Alice", totalPoints: 4500 },
-      { username: "Bob", totalPoints: 4300 },
-      { username: "Carol", totalPoints: 4000 }
-    ];
+    const API_URL = "/api/challenge";
+    const API_POST_URL = "/api/submit";
 
-    const API_URL = "/api/challenge"; // não será usado nesse teste
-    const API_POST_URL = "/api/submit"; // não será usado nesse teste
-
-    // Função de renderização com chave de pontos
+    // Função atualizada para aceitar chave de pontos
     function renderRanking(tableId, rankingArray, key = "points") {
       const tbody = document.querySelector(`#${tableId} tbody`);
       tbody.innerHTML = "";
@@ -132,9 +120,28 @@
       });
     }
 
-    // Renderiza rankings fake
-    renderRanking("dailyRanking", fakeDailyTop, "points");
-    renderRanking("overallRanking", fakeOverallTop, "totalPoints");
+    // Carrega o desafio + rankings
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById("emojis").innerText = "No challenge today!";
+        } else {
+          document.getElementById("emojis").innerText = data.emojis;
+          answer = String(data.answer || "").toLowerCase().trim();
+          const alt = String(data.alt || "");
+          altAnswers = alt ? alt.toLowerCase().split(",").map(a => a.trim()) : [];
+          challengeLoadedTime = new Date();
+
+          // Renderiza rankings com chave correta
+          renderRanking("dailyRanking", data.dailyTop, "points");
+          renderRanking("overallRanking", data.overallTotal, "totalPoints");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("emojis").innerText = "Error loading challenge.";
+      });
 
     function calculatePoints(elapsedSeconds, attempts) {
       const base = 1000;
@@ -144,8 +151,20 @@
     }
 
     function sendScoreToSheet(username, points, attempts, elapsed) {
-      console.log("Fake submit:", { username, points, attempts, elapsed });
-      return Promise.resolve({ success: true });
+      const payload = {
+        username,
+        challengeDate: new Date().toISOString().split("T")[0],
+        points,
+        attempts,
+        elapsed
+      };
+
+      return fetch(API_POST_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json());
     }
 
     function checkAnswer() {
@@ -168,6 +187,19 @@
             console.log("Score sent:", data);
             document.getElementById("result").innerText = "✅ Correct!";
             document.getElementById("result").style.color = "green";
+
+            // Atualiza rankings após envio
+            return fetch(API_URL)
+              .then(res => res.json())
+              .then(updated => {
+                renderRanking("dailyRanking", updated.dailyTop, "points");
+                renderRanking("overallRanking", updated.overallTotal, "totalPoints");
+              });
+          })
+          .catch(err => {
+            console.error("Error sending score:", err);
+            document.getElementById("result").innerText = "⚠️ Correct, but failed to record score.";
+            document.getElementById("result").style.color = "orange";
           });
       } else {
         document.getElementById("result").innerText = "❌ Try again!";
