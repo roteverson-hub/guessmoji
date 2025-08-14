@@ -22,6 +22,39 @@
     }
     #result { margin-top: 15px; font-size: 1.2em; }
     footer { margin-top: 40px; font-size: 0.8em; color: #777; }
+
+    .rankings {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 30px;
+    }
+    .ranking-box {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      width: 300px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .ranking-box h2 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .ranking-box table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .ranking-box th, .ranking-box td {
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    .ranking-box th {
+      background-color: #f5f5f5;
+    }
   </style>
 </head>
 <body>
@@ -37,6 +70,28 @@
 
   <p id="result"></p>
 
+  <!-- Rankings -->
+  <div class="rankings">
+    <div class="ranking-box">
+      <h2>🏆 Daily Top</h2>
+      <table id="dailyRanking">
+        <thead>
+          <tr><th>#</th><th>User</th><th>Points</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="ranking-box">
+      <h2>🌍 Overall Top</h2>
+      <table id="overallRanking">
+        <thead>
+          <tr><th>#</th><th>User</th><th>Points</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
   <footer>
     &copy; 2025 Guessmoji. All rights reserved.
   </footer>
@@ -47,11 +102,24 @@
     let attempts = 0;
     let challengeLoadedTime = new Date();
 
-    // Agora chamamos os PROXIES do Vercel (mesma origem)
     const API_URL = "/api/challenge";
     const API_POST_URL = "/api/submit";
 
-    // Carrega o desafio
+    function renderRanking(tableId, rankingArray) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      tbody.innerHTML = "";
+      if (!rankingArray || rankingArray.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3">No data</td></tr>`;
+        return;
+      }
+      rankingArray.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${i + 1}</td><td>${row.username}</td><td>${row.points}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Carrega o desafio + rankings
     fetch(API_URL)
       .then(res => res.json())
       .then(data => {
@@ -63,6 +131,10 @@
           const alt = String(data.alt || "");
           altAnswers = alt ? alt.toLowerCase().split(",").map(a => a.trim()) : [];
           challengeLoadedTime = new Date();
+
+          // Renderiza rankings
+          renderRanking("dailyRanking", data.dailyTop);
+          renderRanking("overallRanking", data.overallTotal);
         }
       })
       .catch(err => {
@@ -106,7 +178,7 @@
 
       if (guess && (guess === answer || altAnswers.includes(guess))) {
         const answerTime = new Date();
-        const elapsed = (answerTime - challengeLoadedTime) / 1000; // em segundos
+        const elapsed = (answerTime - challengeLoadedTime) / 1000;
         const points = Math.round(calculatePoints(elapsed, attempts));
 
         sendScoreToSheet(username, points, attempts, elapsed)
@@ -114,6 +186,14 @@
             console.log("Score sent:", data);
             document.getElementById("result").innerText = "✅ Correct!";
             document.getElementById("result").style.color = "green";
+
+            // Atualiza rankings após envio
+            return fetch(API_URL)
+              .then(res => res.json())
+              .then(updated => {
+                renderRanking("dailyRanking", updated.dailyTop);
+                renderRanking("overallRanking", updated.overallTotal);
+              });
           })
           .catch(err => {
             console.error("Error sending score:", err);
