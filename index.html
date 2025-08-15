@@ -68,7 +68,7 @@ let challengeLoadedTime = new Date();
 const API_URL = "/api/challenge";
 const API_POST_URL = "/api/submit";
 
-// Renderiza ranking em tabela
+// Renderiza ranking em tabela (corrigido para lidar com diferentes chaves)
 function renderRanking(tableId, rankingArray, key = "points") {
   const tbody = document.querySelector(`#${tableId} tbody`);
   tbody.innerHTML = "";
@@ -77,8 +77,10 @@ function renderRanking(tableId, rankingArray, key = "points") {
     return;
   }
   rankingArray.forEach((row, i) => {
+    const value = row[key] ?? row.points ?? row.totalPoints ?? 0;
+    const username = row.username ?? "Unknown";
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${i + 1}</td><td>${row.username}</td><td>${row[key] ?? 0}</td>`;
+    tr.innerHTML = `<td>${i + 1}</td><td>${username}</td><td>${value}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -88,7 +90,7 @@ function loadChallenge() {
   fetch(API_URL)
     .then(res => res.json())
     .then(data => {
-      console.log("JSON recebido do AppScript:", data); // log para diagnosticar
+      console.log("JSON recebido do AppScript:", data); // log para diagnóstico
       if (data.error) {
         document.getElementById("emojis").innerText = "No challenge today!";
       } else {
