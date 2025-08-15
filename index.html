@@ -11,7 +11,7 @@
     .hint { font-size: 1em; color: #555; font-style: italic; margin-bottom: 20px; }
     input { padding: 10px; font-size: 1em; width: 250px; max-width: 90%; display: block; margin: 8px auto; }
     button { padding: 10px 15px; font-size: 1em; cursor: pointer; }
-    #result { margin-top: 15px; font-size: 1.2em; }
+    #result, #loginMessage { margin-top: 15px; font-size: 1.2em; }
     footer { margin-top: 40px; font-size: 0.8em; color: #777; }
 
     .rankings { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 30px; }
@@ -30,11 +30,21 @@
 <div id="emojis" class="emoji">Loading...</div>
 <p id="categoryHint" class="hint"></p>
 
-<input id="username" placeholder="Enter your name" />
-<input id="guess" placeholder="Type your answer here" />
-<button id="submitBtn">Submit</button>
+<!-- Login / Register Section -->
+<div id="authSection">
+  <input id="usernameInput" placeholder="Enter username" />
+  <input id="passwordInput" type="password" placeholder="Enter password" />
+  <button id="loginBtn">Login</button>
+  <button id="registerBtn">Register</button>
+  <p id="loginMessage"></p>
+</div>
 
-<p id="result"></p>
+<!-- Game Section -->
+<div id="gameSection" style="display:none;">
+  <input id="guess" placeholder="Type your answer here" />
+  <button id="submitBtn">Submit</button>
+  <p id="result"></p>
+</div>
 
 <div class="rankings">
   <div class="ranking-box">
@@ -66,12 +76,15 @@ let answer = "";
 let altAnswers = [];
 let attempts = 0;
 let challengeLoadedTime = new Date();
+let currentUser = localStorage.getItem("guessmojiUser") || "";
 
+// URLs
 const API_CHALLENGE_URL = "/api/challenge";
 const API_RANKING_URL = "/api/ranking";
 const API_POST_URL = "/api/submit";
+const API_USERS_URL = "/api/users"; // novo endpoint do UsersWebApp
 
-// Renderiza ranking em tabela
+// --- Render Ranking ---
 function renderRanking(tableId, rankingArray, key = "points") {
   const tbody = document.querySelector(`#${tableId} tbody`);
   tbody.innerHTML = "";
@@ -83,12 +96,12 @@ function renderRanking(tableId, rankingArray, key = "points") {
     const value = row[key] ?? row.points ?? row.totalPoints ?? 0;
     const username = row.username ?? "Unknown";
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${i + 1}</td><td>${username}</td><td>${value}</td>`;
+    tr.innerHTML = `<td>${i+1}</td><td>${username}</td><td>${value}</td>`;
     tbody.appendChild(tr);
   });
 }
 
-// Carrega desafio
+// --- Load Challenge ---
 function loadChallenge() {
   fetch(API_CHALLENGE_URL)
     .then(res => res.json())
@@ -112,7 +125,7 @@ function loadChallenge() {
     });
 }
 
-// Carrega rankings
+// --- Load Rankings ---
 function loadRankings() {
   fetch(API_RANKING_URL)
     .then(res => res.json())
@@ -127,45 +140,36 @@ function loadRankings() {
     });
 }
 
-// Inicialização
-loadChallenge();
-loadRankings();
-
+// --- Points Calculation ---
 function calculatePoints(elapsedSeconds, attempts) {
   const base = 1000;
   const timePenalty = elapsedSeconds * 2;
-  const attemptsPenalty = Math.max(0, attempts - 1) * 50;
+  const attemptsPenalty = Math.max(0, attempts-1)*50;
   return Math.max(base - timePenalty - attemptsPenalty, 0);
 }
 
+// --- Send Score ---
 function sendScore(username, points, attempts, elapsed) {
   const payload = { username, challengeDate: new Date().toISOString().split("T")[0], points, attempts, elapsed };
-  return fetch(API_POST_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  }).then(res => res.json());
+  return fetch(API_POST_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) }).then(r=>r.json());
 }
 
+// --- Check Answer ---
 function checkAnswer() {
-  const username = document.getElementById("username").value.trim();
-  if (!username) { alert("Please enter your name!"); return; }
-
+  if (!currentUser) { alert("Please login first!"); return; }
   attempts++;
   const guess = document.getElementById("guess").value.trim().toLowerCase();
-
   if (guess && (guess === answer || altAnswers.includes(guess))) {
-    const elapsed = (new Date() - challengeLoadedTime) / 1000;
+    const elapsed = (new Date()-challengeLoadedTime)/1000;
     const points = Math.round(calculatePoints(elapsed, attempts));
-
-    sendScore(username, points, attempts, elapsed)
+    sendScore(currentUser, points, attempts, elapsed)
       .then(data => {
         document.getElementById("result").innerText = "✅ Correct!";
         document.getElementById("result").style.color = "green";
         loadRankings();
       })
-      .catch(err => {
-        console.error("Erro ao enviar score:", err);
+      .catch(err=>{
+        console.error(err);
         document.getElementById("result").innerText = "⚠️ Correct, but failed to record score.";
         document.getElementById("result").style.color = "orange";
       });
@@ -175,8 +179,46 @@ function checkAnswer() {
   }
 }
 
+// --- Auth Functions ---
+async function registerUser() {
+  const username = document.getElementById("usernameInput").value.trim();
+  const password = document.getElementById("passwordInput").value;
+  if (!username || !password) { alert("Enter username & password"); return; }
+  const passwordHash = btoa(password); // hash simples
+  const res = await fetch(API_USERS_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({action:"addUser", username, passwordHash, createdAt:new Date().toISOString()}) });
+  const data = await res.json();
+  if (data.status==="success") { localStorage.setItem("guessmojiUser", username); currentUser=username; showGame(); document.getElementById("loginMessage").innerText="Registered & logged in!"; }
+  else { document.getElementById("loginMessage").innerText = data.message; }
+}
+
+async function loginUser() {
+  const username = document.getElementById("usernameInput").value.trim();
+  const password = document.getElementById("passwordInput").value;
+  if (!username || !password) { alert("Enter username & password"); return; }
+  const passwordHash = btoa(password);
+  const res = await fetch(API_USERS_URL).then(r=>r.json());
+  const users = await res.json();
+  const user = users.find(u=>u.username===username && u.passwordHash===passwordHash);
+  if (user) { localStorage.setItem("guessmojiUser", username); currentUser=username; showGame(); document.getElementById("loginMessage").innerText="Logged in!"; }
+  else { document.getElementById("loginMessage").innerText="Invalid username or password"; }
+}
+
+function showGame() {
+  document.getElementById("authSection").style.display="none";
+  document.getElementById("gameSection").style.display="block";
+}
+
+// --- Event Listeners ---
 document.getElementById("submitBtn").addEventListener("click", checkAnswer);
+document.getElementById("registerBtn").addEventListener("click", registerUser);
+document.getElementById("loginBtn").addEventListener("click", loginUser);
+
+// Auto-login se usuário salvo
+if (currentUser) showGame();
+
+// Inicializa
+loadChallenge();
+loadRankings();
 </script>
 </body>
 </html>
-
