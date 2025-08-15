@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 const SHEET_USERS = "Users";
-const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_POST_URL;
+const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_USERS_URL;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
