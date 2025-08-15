@@ -65,10 +65,11 @@ let altAnswers = [];
 let attempts = 0;
 let challengeLoadedTime = new Date();
 
-const API_URL = "/api/challenge";
+const API_CHALLENGE_URL = "/api/challenge";
+const API_RANKING_URL = "/api/ranking";
 const API_POST_URL = "/api/submit";
 
-// Renderiza ranking em tabela (corrigido para lidar com diferentes chaves)
+// Renderiza ranking em tabela
 function renderRanking(tableId, rankingArray, key = "points") {
   const tbody = document.querySelector(`#${tableId} tbody`);
   tbody.innerHTML = "";
@@ -85,12 +86,11 @@ function renderRanking(tableId, rankingArray, key = "points") {
   });
 }
 
-// Carrega desafio + rankings
+// Carrega desafio
 function loadChallenge() {
-  fetch(API_URL)
+  fetch(API_CHALLENGE_URL)
     .then(res => res.json())
     .then(data => {
-      console.log("JSON recebido do AppScript:", data); // log para diagnóstico
       if (data.error) {
         document.getElementById("emojis").innerText = "No challenge today!";
       } else {
@@ -99,20 +99,32 @@ function loadChallenge() {
         const alt = String(data.alt || "");
         altAnswers = alt ? alt.toLowerCase().split(",").map(a => a.trim()) : [];
         challengeLoadedTime = new Date();
-
-        renderRanking("dailyRanking", data.dailyTop || [], "points");
-        renderRanking("overallRanking", data.overallTotal || [], "totalPoints");
       }
     })
     .catch(err => {
-      console.error("Erro no fetch:", err);
+      console.error("Erro no fetch challenge:", err);
       document.getElementById("emojis").innerText = "Error loading challenge.";
+    });
+}
+
+// Carrega rankings
+function loadRankings() {
+  fetch(API_RANKING_URL)
+    .then(res => res.json())
+    .then(data => {
+      renderRanking("dailyRanking", data.dailyTop || [], "points");
+      renderRanking("overallRanking", data.overallTotal || [], "totalPoints");
+    })
+    .catch(err => {
+      console.error("Erro no fetch rankings:", err);
       renderRanking("dailyRanking", [], "points");
       renderRanking("overallRanking", [], "totalPoints");
     });
 }
 
+// Inicialização
 loadChallenge();
+loadRankings();
 
 function calculatePoints(elapsedSeconds, attempts) {
   const base = 1000;
@@ -121,7 +133,7 @@ function calculatePoints(elapsedSeconds, attempts) {
   return Math.max(base - timePenalty - attemptsPenalty, 0);
 }
 
-function sendScoreToSheet(username, points, attempts, elapsed) {
+function sendScore(username, points, attempts, elapsed) {
   const payload = { username, challengeDate: new Date().toISOString().split("T")[0], points, attempts, elapsed };
   return fetch(API_POST_URL, {
     method: "POST",
@@ -138,16 +150,14 @@ function checkAnswer() {
   const guess = document.getElementById("guess").value.trim().toLowerCase();
 
   if (guess && (guess === answer || altAnswers.includes(guess))) {
-    const answerTime = new Date();
-    const elapsed = (answerTime - challengeLoadedTime) / 1000;
+    const elapsed = (new Date() - challengeLoadedTime) / 1000;
     const points = Math.round(calculatePoints(elapsed, attempts));
 
-    sendScoreToSheet(username, points, attempts, elapsed)
+    sendScore(username, points, attempts, elapsed)
       .then(data => {
-        console.log("Score enviado:", data);
         document.getElementById("result").innerText = "✅ Correct!";
         document.getElementById("result").style.color = "green";
-        loadChallenge(); // atualiza rankings após envio
+        loadRankings();
       })
       .catch(err => {
         console.error("Erro ao enviar score:", err);
