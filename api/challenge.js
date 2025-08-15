@@ -21,18 +21,26 @@ export default async function handler(req, res) {
   try {
     // URL do Apps Script (GET) — defina no Vercel Settings → Environment Variables
     const APPS_SCRIPT_GET_URL =
-      process.env.APPS_SCRIPT_GET_URL ||
-      ''; // alternativa: cole a URL aqui como string
+      process.env.APPS_SCRIPT_GET_URL || ''; // alternativa: cole a URL aqui como string
 
     if (!APPS_SCRIPT_GET_URL) {
       return res.status(500).json({ error: 'APPS_SCRIPT_GET_URL não configurada' });
     }
 
     const fwd = await fetch(APPS_SCRIPT_GET_URL);
-    const text = await fwd.text();
     let data;
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
+    try {
+      let text = await fwd.text();
+      // Remove caracteres invisíveis ou BOM no início
+      text = text.trim().replace(/^\uFEFF/, '');
+      data = JSON.parse(text);
+    } catch (err) {
+      console.error("Erro ao parsear JSON do Apps Script:", err);
+      return res.status(500).json({ error: 'Invalid JSON from Apps Script', details: String(err) });
+    }
+
+    // Retorna o JSON original para o front-end
     res.status(fwd.ok ? 200 : fwd.status).json(data);
   } catch (err) {
     res.status(500).json({ error: 'Proxy error', details: String(err) });
