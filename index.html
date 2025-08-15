@@ -98,7 +98,7 @@ function loadChallenge() {
         document.getElementById("categoryHint").innerText = "";
       } else {
         document.getElementById("emojis").innerText = data.emojis || "🤔";
-        document.getElementById("categoryHint").innerText = data.category ? `💡 Dica: ${data.category}` : "";
+        document.getElementById("categoryHint").innerText = data.category ? `💡 Hint: ${data.category}` : "";
         answer = String(data.answer || "").toLowerCase().trim();
         const alt = String(data.alt || "");
         altAnswers = alt ? alt.toLowerCase().split(",").map(a => a.trim()) : [];
@@ -179,3 +179,4 @@ document.getElementById("submitBtn").addEventListener("click", checkAnswer);
 </script>
 </body>
 </html>
+
