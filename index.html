@@ -1,3 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Guessmoji - Daily Emoji Challenge</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 30px; background-color: #f9f9f9; }
+    h1 { font-size: 2em; }
+    .emoji { font-size: 3em; margin: 20px 0; }
+    .hint { font-size: 1em; color: #555; font-style: italic; margin-bottom: 20px; }
+    input { padding: 10px; font-size: 1em; width: 250px; max-width: 90%; display: block; margin: 8px auto; }
+    button { padding: 10px 15px; font-size: 1em; cursor: pointer; }
+    #result, #loginMessage { margin-top: 15px; font-size: 1.2em; }
+    footer { margin-top: 40px; font-size: 0.8em; color: #777; }
+
+    .rankings { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 30px; }
+    .ranking-box { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 300px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .ranking-box h2 { font-size: 1.2em; margin-bottom: 10px; }
+    .ranking-box table { width: 100%; border-collapse: collapse; }
+    .ranking-box th, .ranking-box td { padding: 5px; border-bottom: 1px solid #eee; text-align: left; font-size: 0.9em; }
+    .ranking-box th { background-color: #f5f5f5; }
+  </style>
+</head>
+<body>
+
+<h1>Guessmoji</h1>
+<p>Can you guess today’s emoji puzzle? One challenge per day, worldwide!</p>
+
+<div id="emojis" class="emoji">Loading...</div>
+<p id="categoryHint" class="hint"></p>
+
+<!-- Login / Register Section -->
+<div id="authSection">
+  <input id="usernameInput" placeholder="Enter username" />
+  <input id="passwordInput" type="password" placeholder="Enter password" />
+  <button id="loginBtn">Login</button>
+  <button id="registerBtn">Register</button>
+  <p id="loginMessage"></p>
+</div>
+
+<!-- Game Section -->
+<div id="gameSection" style="display:none;">
+  <input id="guess" placeholder="Type your answer here" />
+  <button id="submitBtn">Submit</button>
+  <p id="result"></p>
+</div>
+
+<div class="rankings">
+  <div class="ranking-box">
+    <h2>🏆 Daily Top</h2>
+    <table id="dailyRanking">
+      <thead>
+        <tr><th>#</th><th>User</th><th>Points</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="ranking-box">
+    <h2>🌍 Overall Top</h2>
+    <table id="overallRanking">
+      <thead>
+        <tr><th>#</th><th>User</th><th>Points</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<footer>
+  &copy; 2025 Guessmoji. All rights reserved.
+</footer>
+
 <script>
 let answer = "";
 let altAnswers = [];
@@ -9,7 +82,7 @@ let currentUser = localStorage.getItem("guessmojiUser") || "";
 const API_CHALLENGE_URL = "/api/challenge";
 const API_RANKING_URL = "/api/ranking";
 const API_POST_URL = "/api/submit";
-const API_USERS_URL = "https://script.google.com/macros/s/AKfycbylEwOHypdePUixYF1f99h9-Sm7KjPC08367sJtlwuFswart8Wq7iLar2GM4tObcbuDYw/exec"; // <<< COLE AQUI O URL DO UsersWebApp publicado
+const API_USERS_URL = "https://script.google.com/macros/s/AKfycbylEwOHypdePUixYF1f99h9-Sm7KjPC08367sJtlwuFswart8Wq7iLar2GM4tObcbuDYw/exec"; // <<< insira o link do Apps Script publicado
 
 // --- Render Ranking ---
 function renderRanking(tableId, rankingArray, key = "points") {
@@ -118,7 +191,7 @@ async function registerUser() {
     body:JSON.stringify({ 
       action: "addUser",
       username, 
-      passwordHash: password, // por enquanto sem hash
+      passwordHash: password,
       createdAt: new Date().toISOString()
     })
   });
@@ -175,3 +248,5 @@ if (currentUser) showGame();
 loadChallenge();
 loadRankings();
 </script>
+</body>
+</html>
