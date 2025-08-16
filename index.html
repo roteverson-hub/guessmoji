@@ -82,7 +82,8 @@ let currentUser = localStorage.getItem("guessmojiUser") || "";
 const API_CHALLENGE_URL = "/api/challenge";
 const API_RANKING_URL = "/api/ranking";
 const API_POST_URL = "/api/submit";
-const API_USERS_URL = "/api/users"; // novo endpoint do UsersWebApp
+const API_REGISTER_URL = "/api/register";
+const API_LOGIN_URL = "/api/login";
 
 // --- Render Ranking ---
 function renderRanking(tableId, rankingArray, key = "points") {
@@ -185,10 +186,16 @@ async function registerUser() {
   const password = document.getElementById("passwordInput").value;
   if (!username || !password) { alert("Enter username & password"); return; }
   const passwordHash = btoa(password); // hash simples
-  const res = await fetch(API_USERS_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({action:"addUser", username, passwordHash, createdAt:new Date().toISOString()}) });
+  const res = await fetch(API_REGISTER_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ username, passwordHash }) });
   const data = await res.json();
-  if (data.status==="success") { localStorage.setItem("guessmojiUser", username); currentUser=username; showGame(); document.getElementById("loginMessage").innerText="Registered & logged in!"; }
-  else { document.getElementById("loginMessage").innerText = data.message; }
+  if (data.status==="success") {
+    localStorage.setItem("guessmojiUser", username);
+    currentUser=username;
+    showGame();
+    document.getElementById("loginMessage").innerText="Registered & logged in!";
+  } else {
+    document.getElementById("loginMessage").innerText = data.message;
+  }
 }
 
 async function loginUser() {
@@ -196,11 +203,16 @@ async function loginUser() {
   const password = document.getElementById("passwordInput").value;
   if (!username || !password) { alert("Enter username & password"); return; }
   const passwordHash = btoa(password);
-  const res = await fetch(API_USERS_URL).then(r=>r.json());
-  const users = await res.json();
-  const user = users.find(u=>u.username===username && u.passwordHash===passwordHash);
-  if (user) { localStorage.setItem("guessmojiUser", username); currentUser=username; showGame(); document.getElementById("loginMessage").innerText="Logged in!"; }
-  else { document.getElementById("loginMessage").innerText="Invalid username or password"; }
+  const res = await fetch(API_LOGIN_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ username, passwordHash }) });
+  const data = await res.json();
+  if (data.status==="success") {
+    localStorage.setItem("guessmojiUser", username);
+    currentUser=username;
+    showGame();
+    document.getElementById("loginMessage").innerText="Logged in!";
+  } else {
+    document.getElementById("loginMessage").innerText="Invalid username or password";
+  }
 }
 
 function showGame() {
