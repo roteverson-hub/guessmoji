@@ -185,8 +185,12 @@ async function registerUser() {
   const username = document.getElementById("usernameInput").value.trim();
   const password = document.getElementById("passwordInput").value;
   if (!username || !password) { alert("Enter username & password"); return; }
-  const passwordHash = btoa(password); // hash simples
-  const res = await fetch(API_REGISTER_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ username, passwordHash }) });
+
+  const res = await fetch(API_REGISTER_URL, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ username, password }) // envia password puro (teste)
+  });
   const data = await res.json();
   if (data.status==="success") {
     localStorage.setItem("guessmojiUser", username);
@@ -194,7 +198,7 @@ async function registerUser() {
     showGame();
     document.getElementById("loginMessage").innerText="Registered & logged in!";
   } else {
-    document.getElementById("loginMessage").innerText = data.message;
+    document.getElementById("loginMessage").innerText = data.message || "Error registering";
   }
 }
 
@@ -202,8 +206,12 @@ async function loginUser() {
   const username = document.getElementById("usernameInput").value.trim();
   const password = document.getElementById("passwordInput").value;
   if (!username || !password) { alert("Enter username & password"); return; }
-  const passwordHash = btoa(password);
-  const res = await fetch(API_LOGIN_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ username, passwordHash }) });
+
+  const res = await fetch(API_LOGIN_URL, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ username, password })
+  });
   const data = await res.json();
   if (data.status==="success") {
     localStorage.setItem("guessmojiUser", username);
