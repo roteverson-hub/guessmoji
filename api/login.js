@@ -7,19 +7,20 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing username or password" });
       }
 
-      // Consulta no Apps Script
-      const response = await fetch(process.env.APPS_SCRIPT_POST_URL, {
+      // Consulta no Apps Script UsersWebApp
+      const response = await fetch(process.env.APPS_SCRIPT_USERS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "login",
           username,
-          password, // ⚠️ sem hash
+          password, // texto puro para teste
         }),
       });
 
       const data = await response.json();
       return res.status(200).json(data);
+
     } catch (error) {
       return res.status(500).json({ error: "Error logging in", details: error.message });
     }
