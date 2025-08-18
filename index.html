@@ -82,7 +82,8 @@ let currentUser = localStorage.getItem("guessmojiUser") || "";
 const API_CHALLENGE_URL = "/api/challenge";
 const API_RANKING_URL = "/api/ranking";
 const API_POST_URL = "/api/submit";
-const API_USERS_URL = "https://script.google.com/macros/s/AKfycbylEwOHypdePUixYF1f99h9-Sm7KjPC08367sJtlwuFswart8Wq7iLar2GM4tObcbuDYw/exec"; // <<< insira o link do Apps Script publicado
+const API_REGISTER_URL = "/api/register";
+const API_LOGIN_URL = "/api/login";
 
 // --- Render Ranking ---
 function renderRanking(tableId, rankingArray, key = "points") {
@@ -184,17 +185,8 @@ async function registerUser() {
   const username = document.getElementById("usernameInput").value.trim();
   const password = document.getElementById("passwordInput").value;
   if (!username || !password) { alert("Enter username & password"); return; }
-
-  const res = await fetch(API_USERS_URL, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ 
-      action: "addUser",
-      username, 
-      passwordHash: password,
-      createdAt: new Date().toISOString()
-    })
-  });
+  const passwordHash = btoa(password); // hash simples
+  const res = await fetch(API_REGISTER_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ username, passwordHash }) });
   const data = await res.json();
   if (data.status==="success") {
     localStorage.setItem("guessmojiUser", username);
@@ -202,7 +194,7 @@ async function registerUser() {
     showGame();
     document.getElementById("loginMessage").innerText="Registered & logged in!";
   } else {
-    document.getElementById("loginMessage").innerText = data.message || "Error registering";
+    document.getElementById("loginMessage").innerText = data.message;
   }
 }
 
@@ -210,16 +202,8 @@ async function loginUser() {
   const username = document.getElementById("usernameInput").value.trim();
   const password = document.getElementById("passwordInput").value;
   if (!username || !password) { alert("Enter username & password"); return; }
-
-  const res = await fetch(API_USERS_URL, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ 
-      action: "login",
-      username, 
-      passwordHash: password
-    })
-  });
+  const passwordHash = btoa(password);
+  const res = await fetch(API_LOGIN_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ username, passwordHash }) });
   const data = await res.json();
   if (data.status==="success") {
     localStorage.setItem("guessmojiUser", username);
@@ -227,7 +211,7 @@ async function loginUser() {
     showGame();
     document.getElementById("loginMessage").innerText="Logged in!";
   } else {
-    document.getElementById("loginMessage").innerText= data.message || "Invalid username or password";
+    document.getElementById("loginMessage").innerText="Invalid username or password";
   }
 }
 
